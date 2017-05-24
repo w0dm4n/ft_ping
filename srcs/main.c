@@ -12,16 +12,10 @@
 
 #include "all.h"
 
-static void		print_usage(void)
+void			print_usage(void)
 {
 	printf("usage: ft_ping [-v] [-g sweepminsize] [-G sweepmaxsize]");
 	printf(" [-h sweepincrsize]\n");
-}
-
-static t_flag	*add_to_flags(int i, t_flag *flags)
-{
-	(void)i;
-	return flags;
 }
 
 static char		*subchar(char *arg, int toSub)
@@ -33,21 +27,13 @@ static char		*zero_at(char *arg, int where)
 {
 	char *tmp = ft_strdup(arg);
 	tmp[where] = '\0';
-	// leaks
 	return tmp;
-}
-
-static BOOL		has_argument(char *flag)
-{
-	if (flag[0] == FLAG_H || flag[0] == FLAG_g || flag[0] == FLAG_G)
-		return (TRUE);
-	return (FALSE);
 }
 
 static BOOL		two_args(char *flag)
 {
 	if (ft_strlen(flag) == 1)
-		return (has_argument(flag));
+		return (has_argument(flag[0]));
 	return (FALSE);
 }
 
@@ -55,9 +41,9 @@ int				main(int argc, char **argv)
 {
 	int		i;
 	BOOL	host_set;
-	t_flag	*flags;
+	t_data	*data;
 
-	(void)flags;
+	data = get_data();
 	host_set = FALSE;
 	i = 1;
 	if (argc >= 2)
@@ -75,30 +61,32 @@ int				main(int argc, char **argv)
 				{
 					if (two_args(subchar(argv[i], 1)))
 					{
-						printf("flag with separated : (%s) = (%s)\n", subchar(argv[i], 1), argv[i + 1]);
+						if ((i + 1) < argc)
+							add_flag(subchar(argv[i], 1), argv[i + 1]);
+						else
+						{
+							print_usage();
+							exit(0);
+						}
 						i++;
 					}
 					else
 					{
-						if (has_argument(subchar(argv[i], 1)))
-						{
-							printf("flag with arg on it: (%s) = (%s)\n", zero_at(subchar(argv[i], 1), 1), subchar(argv[i], 2));
-						}
+						if (has_argument(subchar(argv[i], 1)[0]))
+							add_flag(zero_at(subchar(argv[i], 1), 1), subchar(argv[i], 2));
 						else
-						{
-							printf("flag without arg: (%s)\n", subchar(argv[i], 1));
-						}
-						flags = add_to_flags(i, flags);
+							add_flag(subchar(argv[i], 1), NULL);
 					}
 				}
 			}
 			else
 			{
-				printf("host is set: %s\n", argv[i]);
+				set_host(argv[i]);
 				host_set = TRUE;
 			}
 			i++;
 		}
+		parse_data();
 	}
 	else
 		print_usage();

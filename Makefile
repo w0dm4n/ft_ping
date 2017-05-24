@@ -30,6 +30,8 @@ LIBFT_LIB			=	$(LIBFT_DIR)libft.a
 
 SRCBASE_PING	=	\
 					main.c                \
+					data.c				  \
+					flags.c
 
 INCS			=	$(addprefix $(INCDIR), $(INCBASE))
 
