@@ -41,9 +41,7 @@ int				main(int argc, char **argv)
 {
 	int		i;
 	BOOL	host_set;
-	t_data	*data;
 
-	data = get_data();
 	host_set = FALSE;
 	i = 1;
 	if (argc >= 2)
