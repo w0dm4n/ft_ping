@@ -62,4 +62,6 @@ void				parse_data(void)
 		print_usage();
 		exit(0);
 	}
+	hostname_to_ip(get_data()->host, get_data()->host);
+	printf("DNS = %s\n", get_data()->host);
 }

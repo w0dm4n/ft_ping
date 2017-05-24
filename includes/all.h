@@ -15,6 +15,9 @@
 
 # include	"../libft/includes/libft.h"
 # include	<stdio.h>
+# include	<sys/socket.h>
+# include	<netdb.h>
+# include	<arpa/inet.h>
 # define	BOOL	int
 # define	TRUE	1
 # define	FALSE	0
@@ -41,6 +44,7 @@ typedef struct		s_data
 ** MAIN
 */
 void				print_usage(void);
+int					hostname_to_ip(char *hostname, char *ip);
 
 /*
 **	DATA

@@ -37,6 +37,39 @@ static BOOL		two_args(char *flag)
 	return (FALSE);
 }
 
+int				hostname_to_ip(char *hostname, char *ip)
+{
+    struct addrinfo 		hints;
+	struct addrinfo			*servinfo;
+	struct addrinfo			*p;
+    struct sockaddr_in		*h;
+    int						rv;
+	char					input[1024];
+
+	(void)ip;
+    ft_memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    if ((rv = getaddrinfo(hostname, "http", &hints, &servinfo)) != 0) 
+    {
+        printf("ft_ping: cannot resolve %s: Unknown host.\n", hostname);
+        exit(0);
+    }
+	p = servinfo;
+	while (p != NULL)
+	{
+
+		h = (struct sockaddr_in*) p->ai_addr;
+		inet_ntop(AF_INET, &(h->sin_addr), input, INET_ADDRSTRLEN);
+		if (input[0] != '0')
+			ft_strcpy(ip, input);
+		ft_bzero(input, 1024);
+		p = p->ai_next;
+	}
+    //freeaddrinfo(servinfo);
+    return (0);
+}
+
 int				main(int argc, char **argv)
 {
 	int		i;
