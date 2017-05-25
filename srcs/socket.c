@@ -27,7 +27,7 @@ static void			set_address_header(void)
 	if (!(inet_pton(AF_INET, data->host, &(data->header.ip_dst))))
 	{
 		printf("ft_ping: Can't set destination network address\n");
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 	data->header.ip_ttl = 255; // Time to live
 	data->header.ip_p = IPPROTO_ICMP; // ICMP Protocol
@@ -55,12 +55,12 @@ static void			set_icmp_header(void)
 void				start_icmp_connection(void)
 {
 	t_data				*data;
-	BOOL				opt;
 	uint8_t				*packet;
 	int					data_len = 4;
 	char				data_send[4];
 	struct sockaddr_in	sin;
 	SOCKET				sd;
+	BOOL				opt;
 	//char			src_address[16] = "10.11.10.10\0";
 
 	opt = TRUE;
@@ -80,8 +80,20 @@ void				start_icmp_connection(void)
 	ft_memset (&sin, 0, sizeof (struct sockaddr_in));
 	sin.sin_family = AF_INET;
 	sin.sin_addr.s_addr = data->header.ip_dst.s_addr;
-	if ((sd = socket (AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) {
-    perror ("socket() failed ");
-    exit (EXIT_FAILURE);
-  }
+	if ((sd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) // Raw socket descriptor
+	{
+		printf("socket() failed : Operation not permitted\n");
+		exit(EXIT_FAILURE);
+	}
+	if (setsockopt (sd, IPPROTO_IP, IP_HDRINCL, &opt, sizeof (opt)) < 0) // set flag so socket expects us to provide IPv4 header.
+	{
+		printf("setsockopt() failed to set IP_HDRINCL\n");
+		exit (EXIT_FAILURE);
+	}
+	if (sendto (sd, packet, IP4_HDRLEN + ICMP_HDRLEN + data_len, 0, (struct sockaddr *) &sin, sizeof (struct sockaddr)) < 0) // Send packet
+	{
+		printf("sendto() failed : Can't send raw data");
+		exit(EXIT_FAILURE);
+	}
+	close (sd);
 }
