@@ -59,7 +59,6 @@ void				start_icmp_connection(void)
 	int					data_len = 4;
 	char				data_send[4];
 	struct sockaddr_in	sin;
-	SOCKET				sd;
 	BOOL				opt;
 	//char			src_address[16] = "10.11.10.10\0";
 
@@ -74,23 +73,23 @@ void				start_icmp_connection(void)
 	packet = ft_allocate_ustrmem(IP_MAXPACKET);
 	ft_memcpy(packet, &data->header, IP4_HDRLEN); // First part IPv4
 	ft_memcpy((packet + IP4_HDRLEN), &data->icmp_header, ICMP_HDRLEN); // Upper layer protocol header
-	ft_memcpy(packet + + IP4_HDRLEN + ICMP_HDRLEN, data_send, data_len); // ICMP data
+	ft_memcpy(packet + IP4_HDRLEN + ICMP_HDRLEN, data_send, data_len); // ICMP data
 	data->icmp_header.icmp_cksum = checksum ((uint16_t *) (packet + IP4_HDRLEN), ICMP_HDRLEN + data_len); // generate checksum
 
 	ft_memset (&sin, 0, sizeof (struct sockaddr_in));
 	sin.sin_family = AF_INET;
 	sin.sin_addr.s_addr = data->header.ip_dst.s_addr;
-	if ((sd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) // Raw socket descriptor
+	if ((data->fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) // Raw socket descriptor
 	{
 		printf("socket() failed : Operation not permitted\n");
 		exit(EXIT_FAILURE);
 	}
-	if (setsockopt (sd, IPPROTO_IP, IP_HDRINCL, &opt, sizeof (opt)) < 0) // set flag so socket expects us to provide IPv4 header.
+	if (setsockopt (data->fd, IPPROTO_IP, IP_HDRINCL, &opt, sizeof (opt)) < 0) // set flag so socket expects us to provide IPv4 header.
 	{
 		printf("setsockopt() failed to set IP_HDRINCL\n");
 		exit (EXIT_FAILURE);
 	}
-	if (sendto (sd, packet, IP4_HDRLEN + ICMP_HDRLEN + data_len, 0, (struct sockaddr *) &sin, sizeof (struct sockaddr)) < 0) // Send packet
+	if (sendto (data->fd, packet, IP4_HDRLEN + ICMP_HDRLEN + data_len, 0, (struct sockaddr *) &sin, sizeof (struct sockaddr)) < 0) // Send packet
 	{
 		printf("sendto() failed : Can't send raw data");
 		exit(EXIT_FAILURE);
@@ -99,5 +98,5 @@ void				start_icmp_connection(void)
 	{
 		printf("ICMP Request sent successfully to %s\n", data->host);
 	}
-	close (sd);
+	close (data->fd);
 }
