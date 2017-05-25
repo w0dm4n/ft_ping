@@ -12,79 +12,115 @@
 
 #include "all.h"
 
-static void			set_address_header(void)
+static void			set_address_header(void *packet, int packet_size)
 {
 	t_data		*data;
-	int			data_len = 4;
 
 	data = get_data();
-	data->header.ip_src.s_addr = INADDR_ANY;
-	if (!(inet_pton(AF_INET, data->host, &(data->header.ip_dst))))
+	data->header = (struct ip *) packet;
+
+	data->header->ip_src.s_addr = INADDR_ANY;
+	if (!(inet_pton(AF_INET, data->host, &(data->header->ip_dst))))
 	{
 		printf("ft_ping: Can't set destination network address\n");
 		exit(EXIT_FAILURE);
 	}
-	data->header.ip_ttl = 255; // Time to live
-	data->header.ip_p = IPPROTO_ICMP; // ICMP Protocol
-	data->header.ip_v = 4; // IPv4
-	data->header.ip_hl = sizeof(struct ip) >> 2; // IPv4 header length (4 bits)
-	data->header.ip_tos = 0;
-	data->header.ip_len = htons(IP4_HDRLEN + ICMP_HDRLEN + data_len);
-	data->header.ip_off = 0;
-	data->header.ip_sum = 0; // set checksum to zero to calculate
+	data->header->ip_ttl = 255; // Time to live
+	data->header->ip_p = IPPROTO_ICMP; // ICMP Protocol
+	data->header->ip_v = 4; // IPv4
+	//data->header.ip_hl = sizeof(struct ip) >> 2; // IPv4 header length (4 bits)
+	data->header->ip_hl = 5;
+	data->header->ip_tos = 0;
+	data->header->ip_len = htons(packet_size);
+	data->header->ip_off = 0;
+	data->header->ip_sum = 0; // set checksum to zero to calculate
 	//data->header.ip_sum = checksum((uint16_t *) &data->header, IP4_HDRLEN); // calculate checksum
 }
 
-static void			set_icmp_header(void)
+static void			set_icmp_header(void *packet)
 {
 	t_data			*data;
 
 	data = get_data();
-	data->icmp_header.icmp_type = ICMP_ECHO; // ECHO REQUEST
-	data->icmp_header.icmp_code = 0; // 8 bits echo request
-	data->icmp_header.icmp_id = htons (1000); // identifier usually the pid of the current process - rand number
-	data->icmp_header.icmp_seq = htons(1);
-	data->icmp_header.icmp_cksum = 0; // set checksum to zero to calculate
+	data->icmp_header = (struct icmp *) (packet + sizeof (struct ip));
+	data->icmp_header->icmp_type = ICMP_ECHO; // ECHO REQUEST
+	data->icmp_header->icmp_code = 0; // 8 bits echo request
+	data->icmp_header->icmp_id = htons (1000); // identifier usually the pid of the current process - rand number
+	data->icmp_header->icmp_seq = htons(1);
+	data->icmp_header->icmp_cksum = 0; // set checksum to zero to calculate
+}
+
+unsigned short		in_cksum(unsigned short *ptr, int nbytes)
+{
+    register long sum;
+    u_short oddbyte;
+    register u_short answer;
+ 
+    sum = 0;
+    while (nbytes > 1) {
+        sum += *ptr++;
+        nbytes -= 2;
+    }
+ 
+    if (nbytes == 1) {
+        oddbyte = 0;
+        *((u_char *) & oddbyte) = *(u_char *) ptr;
+        sum += oddbyte;
+    }
+ 
+    sum = (sum >> 16) + (sum & 0xffff);
+    sum += (sum >> 16);
+    answer = ~sum;
+ 
+    return (answer);
 }
 
 void				start_icmp_connection(void)
 {
 	t_data				*data;
-	uint8_t				*packet;
-	int					data_len = 4;
-	char				data_send[4];
 	struct sockaddr_in	sin;
 	BOOL				opt;
+	int					payload_size = 32;
+	int					packet_size = sizeof (struct ip) + sizeof (struct icmp) + payload_size;
+	char				*packet;
 	//char			src_address[16] = "10.11.10.10\0";
 
 	opt = TRUE;
 	data = get_data();
-	set_address_header();
-	set_icmp_header();
-	data_send[0] = 'T';
-	data_send[1] = 'e';
-	data_send[2] = 's';
-	data_send[3] = 't';
-	packet = ft_allocate_ustrmem(IP_MAXPACKET);
-	ft_memcpy(packet, &data->header, IP4_HDRLEN); // First part IPv4
-	ft_memcpy((packet + IP4_HDRLEN), &data->icmp_header, ICMP_HDRLEN); // Upper layer protocol header
-	ft_memcpy(packet + IP4_HDRLEN + ICMP_HDRLEN, data_send, data_len); // ICMP data
-	data->icmp_header.icmp_cksum = checksum ((uint16_t *) (packet + IP4_HDRLEN), ICMP_HDRLEN + data_len); // generate checksum
+	packet = NULL;
+	
+	if (!(packet = (char *)malloc(packet_size)))
+		return ;
+	ft_memset(packet, 0, packet_size);
 
+	set_address_header(packet, packet_size);
+	set_icmp_header(packet);
+
+	/* New sockaddr_in */
 	ft_memset (&sin, 0, sizeof (struct sockaddr_in));
 	sin.sin_family = AF_INET;
-	sin.sin_addr.s_addr = data->header.ip_dst.s_addr;
+	sin.sin_addr.s_addr = data->header->ip_dst.s_addr;
+    /*                  */
+
+	ft_memset(packet + sizeof(struct ip) + sizeof(struct icmp), 255, payload_size);
+	data->icmp_header->icmp_cksum = in_cksum((unsigned short *)data->icmp_header, sizeof(struct icmp) + payload_size);
 	if ((data->fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) // Raw socket descriptor
 	{
 		printf("socket() failed : Operation not permitted\n");
 		exit(EXIT_FAILURE);
 	}
-	if (setsockopt (data->fd, IPPROTO_IP, IP_HDRINCL, &opt, sizeof (opt)) < 0) // set flag so socket expects us to provide IPv4 header.
+	if (setsockopt(data->fd, IPPROTO_IP, IP_HDRINCL, &opt, sizeof(opt)) < 0) // set flag so socket expects us to provide IPv4 header.
 	{
 		printf("setsockopt() failed to set IP_HDRINCL\n");
 		exit (EXIT_FAILURE);
 	}
-	if (sendto (data->fd, packet, IP4_HDRLEN + ICMP_HDRLEN + data_len, 0, (struct sockaddr *) &sin, sizeof (struct sockaddr)) < 0) // Send packet
+	if (setsockopt(data->fd, SOL_SOCKET, SO_BROADCAST, (const char*)&opt, sizeof(opt)) < 0) // allow socket to send datagrams to broadcast addresses
+    {
+        printf("setsockopt() failed to set SO_BROADCAST\n");
+        exit (EXIT_FAILURE);
+    }
+	
+	if (sendto(data->fd, packet, packet_size, 0, (struct sockaddr *)&sin, sizeof(struct sockaddr)) < 0) // Send packet
 	{
 		printf("sendto() failed : Can't send raw data");
 		exit(EXIT_FAILURE);
