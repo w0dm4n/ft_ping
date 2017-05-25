@@ -50,31 +50,6 @@ static void			set_icmp_header(void *packet)
 	data->icmp_header->icmp_cksum = 0; // set checksum to zero to calculate
 }
 
-unsigned short		in_cksum(unsigned short *ptr, int nbytes)
-{
-    register long sum;
-    u_short oddbyte;
-    register u_short answer;
- 
-    sum = 0;
-    while (nbytes > 1) {
-        sum += *ptr++;
-        nbytes -= 2;
-    }
- 
-    if (nbytes == 1) {
-        oddbyte = 0;
-        *((u_char *) & oddbyte) = *(u_char *) ptr;
-        sum += oddbyte;
-    }
- 
-    sum = (sum >> 16) + (sum & 0xffff);
-    sum += (sum >> 16);
-    answer = ~sum;
- 
-    return (answer);
-}
-
 void				start_icmp_connection(void)
 {
 	t_data				*data;
@@ -103,7 +78,7 @@ void				start_icmp_connection(void)
     /*                  */
 
 	ft_memset(packet + sizeof(struct ip) + sizeof(struct icmp), 255, payload_size);
-	data->icmp_header->icmp_cksum = in_cksum((unsigned short *)data->icmp_header, sizeof(struct icmp) + payload_size);
+	data->icmp_header->icmp_cksum = checksum((unsigned short *)data->icmp_header, sizeof(struct icmp) + payload_size);
 	if ((data->fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) // Raw socket descriptor
 	{
 		printf("socket() failed : Operation not permitted\n");

@@ -34,31 +34,27 @@ uint8_t				*ft_allocate_ustrmem(int len)
   }
 }
 
-uint16_t			checksum(uint16_t *addr, int len)
+unsigned short		checksum(unsigned short *ptr, int nbytes)
 {
-  int count = len;
-  register uint32_t sum = 0;
-  uint16_t answer = 0;
-
-  // Sum up 2-byte values until none or only one byte left.
-  while (count > 1) {
-	sum += *(addr++);
-	count -= 2;
-  }
-
-  // Add left-over byte, if any.
-  if (count > 0) {
-	sum += *(uint8_t *) addr;
-  }
-
-  // Fold 32-bit sum into 16 bits; we lose information by doing this,
-  // increasing the chances of a collision.
-  // sum = (lower 16 bits) + (upper 16 bits shifted right 16 bits)
-  while (sum >> 16) {
-	sum = (sum & 0xffff) + (sum >> 16);
-  }
-
-  // Checksum is one's compliment of sum.
-  answer = ~sum;
-  return (answer);
+    register long sum;
+    u_short oddbyte;
+    register u_short answer;
+ 
+    sum = 0;
+    while (nbytes > 1) {
+        sum += *ptr++;
+        nbytes -= 2;
+    }
+ 
+    if (nbytes == 1) {
+        oddbyte = 0;
+        *((u_char *) & oddbyte) = *(u_char *) ptr;
+        sum += oddbyte;
+    }
+ 
+    sum = (sum >> 16) + (sum & 0xffff);
+    sum += (sum >> 16);
+    answer = ~sum;
+ 
+    return (answer);
 }

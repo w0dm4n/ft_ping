@@ -45,8 +45,8 @@ typedef struct		s_data
 	t_flag					*flags;
 	char					*host;
 	SOCKET					fd;
-	struct ip				header;
-	struct icmp				icmp_header;
+	struct ip				*header;
+	struct icmp				*icmp_header;
 }					t_data;
 
 /*
@@ -79,6 +79,6 @@ void				start_icmp_connection(void);
 /*
 **	CHECKSUM
 */
-uint16_t			checksum(uint16_t *addr, int len);
+unsigned short		checksum(unsigned short *ptr, int nbytes);
 uint8_t				*ft_allocate_ustrmem(int len);
 t_data				*g_data;
