@@ -20,6 +20,7 @@
 # include	<arpa/inet.h>
 # include	<netinet/ip.h>
 # include	<netinet/ip_icmp.h>
+# include	<unistd.h>
 # define	BOOL	int
 # define	TRUE	1
 # define	FALSE	0
