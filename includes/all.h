@@ -18,13 +18,18 @@
 # include	<sys/socket.h>
 # include	<netdb.h>
 # include	<arpa/inet.h>
+# include	<netinet/ip.h>
+# include	<netinet/ip_icmp.h>
 # define	BOOL	int
 # define	TRUE	1
 # define	FALSE	0
-# define	FLAG_H	'h'
-# define	FLAG_G	'G'
-# define	FLAG_g	'g'
-# define	FLAG_v	'v'
+# define	FLAG_H		'h'
+# define	FLAG_G		'G'
+# define	FLAG_g		'g'
+# define	FLAG_v		'v'
+# define	SOCKET 		int
+# define	IP4_HDRLEN	20			// IPv4 header length
+# define	ICMP_HDRLEN	8			// ICMP header length for echo request, excludes data
 
 typedef struct		s_flag
 {
@@ -36,12 +41,15 @@ typedef struct		s_flag
 
 typedef struct		s_data
 {
-	t_flag			*flags;
-	char			*host;
+	t_flag					*flags;
+	char					*host;
+	SOCKET					fd;
+	struct ip				header;
+	struct icmp				icmp_header;
 }					t_data;
 
 /*
-** MAIN
+**	MAIN
 */
 void				print_usage(void);
 int					hostname_to_ip(char *hostname, char *ip);
@@ -54,7 +62,7 @@ void				set_host(char *host);
 void				parse_data(void);
 
 /*
-** FLAGS
+**	FLAGS
 */
 void				set_flags(t_flag *flags);
 void				add_flag(char *flag, char *value);
@@ -62,4 +70,14 @@ BOOL				has_argument(char flag);
 BOOL				is_valid(char flag);
 #endif
 
+/*
+**	ICMP
+*/
+void				start_icmp_connection(void);
+
+/*
+**	CHECKSUM
+*/
+uint16_t			checksum(uint16_t *addr, int len);
+uint8_t				*ft_allocate_ustrmem(int len);
 t_data				*g_data;

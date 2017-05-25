@@ -15,7 +15,7 @@
 void			print_usage(void)
 {
 	printf("usage: ft_ping [-v] [-g sweepminsize] [-G sweepmaxsize]");
-	printf(" [-h sweepincrsize]\n");
+	printf(" [-h sweepincrsize] [host]\n");
 }
 
 static char		*subchar(char *arg, int toSub)
@@ -66,7 +66,6 @@ int				hostname_to_ip(char *hostname, char *ip)
 		ft_bzero(input, 1024);
 		p = p->ai_next;
 	}
-    //freeaddrinfo(servinfo);
     return (0);
 }
 
