@@ -19,11 +19,6 @@ static void			set_address_header(void)
 
 	data = get_data();
 	data->header.ip_src.s_addr = INADDR_ANY;
-	/*if (!(inet_pton(AF_INET, src_address, &(data->header.ip_src))))
-	{
-		printf("ft_ping: Can't set source network address\n");
-		exit(0);
-	}*/
 	if (!(inet_pton(AF_INET, data->host, &(data->header.ip_dst))))
 	{
 		printf("ft_ping: Can't set destination network address\n");
@@ -37,7 +32,7 @@ static void			set_address_header(void)
 	data->header.ip_len = htons(IP4_HDRLEN + ICMP_HDRLEN + data_len);
 	data->header.ip_off = 0;
 	data->header.ip_sum = 0; // set checksum to zero to calculate
-	data->header.ip_sum = checksum((uint16_t *) &data->header, IP4_HDRLEN); // calculate checksum
+	//data->header.ip_sum = checksum((uint16_t *) &data->header, IP4_HDRLEN); // calculate checksum
 }
 
 static void			set_icmp_header(void)
@@ -48,7 +43,7 @@ static void			set_icmp_header(void)
 	data->icmp_header.icmp_type = ICMP_ECHO; // ECHO REQUEST
 	data->icmp_header.icmp_code = 0; // 8 bits echo request
 	data->icmp_header.icmp_id = htons (1000); // identifier usually the pid of the current process - rand number
-	data->icmp_header.icmp_seq = htons(0);
+	data->icmp_header.icmp_seq = htons(1);
 	data->icmp_header.icmp_cksum = 0; // set checksum to zero to calculate
 }
 
