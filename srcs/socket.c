@@ -46,8 +46,8 @@ static void			set_icmp_header(void)
 
 	data = get_data();
 	data->icmp_header.icmp_type = ICMP_ECHO; // ECHO REQUEST
-	data->icmp_header.icmp_code = 0;
-	data->icmp_header.icmp_id = htons (1000);
+	data->icmp_header.icmp_code = 0; // 8 bits echo request
+	data->icmp_header.icmp_id = htons (1000); // identifier usually the pid of the current process - rand number
 	data->icmp_header.icmp_seq = htons(0);
 	data->icmp_header.icmp_cksum = 0; // set checksum to zero to calculate
 }
@@ -94,6 +94,10 @@ void				start_icmp_connection(void)
 	{
 		printf("sendto() failed : Can't send raw data");
 		exit(EXIT_FAILURE);
+	}
+	else
+	{
+		printf("ICMP Request sent successfully to %s\n", data->host);
 	}
 	close (sd);
 }
