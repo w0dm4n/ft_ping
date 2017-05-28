@@ -28,13 +28,13 @@ static void			set_address_header(void *packet, int packet_size)
 	data->header->ip_ttl = 255; // Time to live
 	data->header->ip_p = IPPROTO_ICMP; // ICMP Protocol
 	data->header->ip_v = 4; // IPv4
-	data->header.ip_hl = sizeof(struct ip) >> 2; // IPv4 header length (4 bits)
+	data->header->ip_hl = sizeof(struct ip) >> 2; // IPv4 header length (4 bits)
 	//data->header->ip_hl = 5;
 	data->header->ip_tos = 0;
 	data->header->ip_len = htons(packet_size);
 	data->header->ip_off = 0;
 	data->header->ip_sum = 0; // set checksum to zero to calculate
-	data->header.ip_sum = checksum((uint16_t *) &data->header, IP4_HDRLEN); // calculate checksum
+	data->header->ip_sum = checksum((uint16_t *) &data->header, IP4_HDRLEN); // calculate checksum
 }
 
 static void			set_icmp_header(void *packet)
