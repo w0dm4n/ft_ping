@@ -18,6 +18,7 @@ static t_data			*alloc_data(void)
 		return (NULL);
 	g_data->flags = NULL;
 	g_data->host = NULL;
+	g_data->sequence = 1;
 	return (g_data);
 }
 
@@ -32,7 +33,7 @@ void					set_host(char *host)
 
 	data = get_data();
 	data->host = host;
-	data->default_host = host;
+	data->default_host = ft_strdup(host);
 }
 
 void				parse_data(void)

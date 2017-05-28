@@ -45,8 +45,8 @@ static void			set_icmp_header(void *packet)
 	data->icmp_header = (struct icmp *) (packet + sizeof (struct ip));
 	data->icmp_header->icmp_type = ICMP_ECHO; // ECHO REQUEST
 	data->icmp_header->icmp_code = 0; // 8 bits echo request
-	data->icmp_header->icmp_id = htons (1000); // identifier usually the pid of the current process - rand number
-	data->icmp_header->icmp_seq = htons(1);
+	data->icmp_header->icmp_id = htons (getpid()); // identifier usually the pid of the current process - rand number
+	data->icmp_header->icmp_seq = htons(get_data()->sequence);
 	data->icmp_header->icmp_cksum = 0; // set checksum to zero to calculate
 }
 
@@ -55,7 +55,7 @@ void				start_icmp_connection(void)
 	t_data				*data;
 	struct sockaddr_in	sin;
 	BOOL				opt;
-	int					payload_size = 32;
+	int					payload_size = 36;
 	int					packet_size = sizeof (struct ip) + sizeof (struct icmp) + payload_size;
 	char				*packet;
 	//char				src_address[16] = "10.11.10.10\0";
@@ -89,18 +89,21 @@ void				start_icmp_connection(void)
 		exit (EXIT_FAILURE);
 	}
 	if (setsockopt(data->fd, SOL_SOCKET, SO_BROADCAST, (const char*)&opt, sizeof(opt)) < 0) // allow socket to send datagrams to broadcast addresses
-    {
-        printf("setsockopt() failed to set SO_BROADCAST\n");
-        exit (EXIT_FAILURE);
+    	{
+		printf("setsockopt() failed to set SO_BROADCAST\n");
+		exit (EXIT_FAILURE);
 	}
-	if (sendto(data->fd, packet, packet_size, 0, (struct sockaddr *)&sin, sizeof(struct sockaddr)) < 0) // Send packet
+	while (TRUE)
 	{
-		printf("sendto() failed : Can't send raw data");
-		exit(EXIT_FAILURE);
-	}
-	else
-	{
-		printf("ICMP Request sent successfully to %s\n", data->host);
+		if (sendto(data->fd, packet, packet_size, 0, (struct sockaddr *)&sin, sizeof(struct sockaddr)) < 0) // Send packet
+		{
+			printf("sendto() failed : Can't send raw data");
+			exit(EXIT_FAILURE);
+		}
+		else
+		{
+			printf("FT_PING %s (%s) 56(84) bytes of data.\n", data->default_host, data->host);	
+		}
 	}
 	close (data->fd);
 }
