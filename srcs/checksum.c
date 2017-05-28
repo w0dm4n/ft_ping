@@ -14,9 +14,10 @@
 
 unsigned short		checksum(unsigned short *ptr, int nbytes)
 {
+	
     register long		sum;
-    u_short				oddbyte;
-    register u_short	answer;
+    unsigned short				oddbyte;
+    register unsigned short	answer;
 
 	sum = 0;
     while (nbytes > 1)
@@ -27,7 +28,7 @@ unsigned short		checksum(unsigned short *ptr, int nbytes)
     if (nbytes == 1)
 	{
 		oddbyte = 0;
-		*((u_char *) & oddbyte) = *(u_char *) ptr;
+		*((unsigned char *) & oddbyte) = *(unsigned char *) ptr;
 		sum += oddbyte;
     }
     sum = (sum >> 16) + (sum & 0xffff);

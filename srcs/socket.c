@@ -58,8 +58,6 @@ void				start_icmp_connection(void)
 	int					payload_size = 36;
 	int					packet_size = sizeof (struct ip) + sizeof (struct icmp) + payload_size;
 	char				*packet;
-	//char				src_address[16] = "10.11.10.10\0";
-
 	opt = TRUE;
 	data = get_data();
 	packet = NULL;
@@ -71,11 +69,10 @@ void				start_icmp_connection(void)
 	set_address_header(packet, packet_size);
 	set_icmp_header(packet);
 
-	/* New sockaddr_in */
 	ft_memset (&sin, 0, sizeof (struct sockaddr_in));
 	sin.sin_family = AF_INET;
 	sin.sin_addr.s_addr = data->header->ip_dst.s_addr;
-    /*                  */
+
 	ft_memset(packet + sizeof(struct ip) + sizeof(struct icmp), 255, payload_size);
 	data->icmp_header->icmp_cksum = checksum((unsigned short *)data->icmp_header, sizeof(struct icmp) + payload_size);
 	if ((data->fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) // Raw socket descriptor
@@ -102,7 +99,27 @@ void				start_icmp_connection(void)
 		}
 		else
 		{
-			printf("FT_PING %s (%s) 56(84) bytes of data.\n", data->default_host, data->host);	
+			printf("FT_PING %s (%s) 56(84) bytes of data.\n", data->default_host, data->host);
+		
+			int return_status;
+			char buffer[4096];
+			struct iovec iov[1];                       /* Data array */
+			struct msghdr msg;                      /* Message header */
+			//struct cmsghdr *cmsg;                   /* Control related data */
+			//struct icmp icmph;                   /* ICMP header */
+
+				iov[0].iov_base = &buffer;
+				iov[0].iov_len = sizeof(buffer);
+				msg.msg_name = (void*)&sin;
+				msg.msg_namelen = sizeof(sin);
+				msg.msg_iov = iov;
+				msg.msg_iovlen = 1;
+				msg.msg_flags = 0;
+				msg.msg_control = 0;
+				msg.msg_controllen = 0;
+				/* Receiving errors flog is set */
+				return_status = recvmsg(data->fd, &msg, 0);
+			printf("return : %d\n", return_status);
 		}
 	}
 	close (data->fd);
