@@ -28,13 +28,13 @@ static void			set_address_header(void *packet, int packet_size)
 	data->header->ip_ttl = 255; // Time to live
 	data->header->ip_p = IPPROTO_ICMP; // ICMP Protocol
 	data->header->ip_v = 4; // IPv4
-	//data->header.ip_hl = sizeof(struct ip) >> 2; // IPv4 header length (4 bits)
-	data->header->ip_hl = 5;
+	data->header.ip_hl = sizeof(struct ip) >> 2; // IPv4 header length (4 bits)
+	//data->header->ip_hl = 5;
 	data->header->ip_tos = 0;
 	data->header->ip_len = htons(packet_size);
 	data->header->ip_off = 0;
 	data->header->ip_sum = 0; // set checksum to zero to calculate
-	//data->header.ip_sum = checksum((uint16_t *) &data->header, IP4_HDRLEN); // calculate checksum
+	data->header.ip_sum = checksum((uint16_t *) &data->header, IP4_HDRLEN); // calculate checksum
 }
 
 static void			set_icmp_header(void *packet)
@@ -58,7 +58,7 @@ void				start_icmp_connection(void)
 	int					payload_size = 32;
 	int					packet_size = sizeof (struct ip) + sizeof (struct icmp) + payload_size;
 	char				*packet;
-	//char			src_address[16] = "10.11.10.10\0";
+	//char				src_address[16] = "10.11.10.10\0";
 
 	opt = TRUE;
 	data = get_data();
@@ -76,7 +76,6 @@ void				start_icmp_connection(void)
 	sin.sin_family = AF_INET;
 	sin.sin_addr.s_addr = data->header->ip_dst.s_addr;
     /*                  */
-
 	ft_memset(packet + sizeof(struct ip) + sizeof(struct icmp), 255, payload_size);
 	data->icmp_header->icmp_cksum = checksum((unsigned short *)data->icmp_header, sizeof(struct icmp) + payload_size);
 	if ((data->fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) // Raw socket descriptor
@@ -93,8 +92,7 @@ void				start_icmp_connection(void)
     {
         printf("setsockopt() failed to set SO_BROADCAST\n");
         exit (EXIT_FAILURE);
-    }
-	
+	}
 	if (sendto(data->fd, packet, packet_size, 0, (struct sockaddr *)&sin, sizeof(struct sockaddr)) < 0) // Send packet
 	{
 		printf("sendto() failed : Can't send raw data");

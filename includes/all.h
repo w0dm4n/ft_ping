@@ -44,6 +44,7 @@ typedef struct		s_data
 {
 	t_flag					*flags;
 	char					*host;
+	char					*default_host;
 	SOCKET					fd;
 	struct ip				*header;
 	struct icmp				*icmp_header;

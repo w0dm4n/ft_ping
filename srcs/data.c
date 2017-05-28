@@ -32,6 +32,7 @@ void					set_host(char *host)
 
 	data = get_data();
 	data->host = host;
+	data->default_host = host;
 }
 
 void				parse_data(void)
