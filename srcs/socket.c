@@ -104,21 +104,19 @@ void				start_icmp_connection(void)
 			int return_status;
 			char buffer[4096];
 			struct iovec iov[1];                       /* Data array */
-			struct msghdr msg;                      /* Message header */
+			struct msghdr *msg = malloc(sizeof(struct msghdr));                      /* Message header */
 			//struct cmsghdr *cmsg;                   /* Control related data */
 			//struct icmp icmph;                   /* ICMP header */
 
 				iov[0].iov_base = &buffer;
 				iov[0].iov_len = sizeof(buffer);
-				msg.msg_name = (void*)&sin;
-				msg.msg_namelen = sizeof(sin);
-				msg.msg_iov = iov;
-				msg.msg_iovlen = 1;
-				msg.msg_flags = 0;
-				msg.msg_control = 0;
-				msg.msg_controllen = 0;
-				/* Receiving errors flog is set */
-				return_status = recvmsg(data->fd, &msg, 0);
+				msg->msg_name = (void*)&sin;
+				msg->msg_namelen = sizeof(sin);
+				msg->msg_iov = iov;
+				msg->msg_iovlen = 1;
+				msg->msg_control = 0;
+				msg->msg_controllen = 0;
+			return_status = recvmsg(data->fd, msg, 0);
 			printf("return : %d\n", return_status);
 		}
 	}
