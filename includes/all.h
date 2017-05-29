@@ -22,6 +22,7 @@
 # include	<netinet/ip_icmp.h>
 # include	<unistd.h>
 # include	<sys/time.h>
+# include	<signal.h>
 # define	BOOL	int
 # define	TRUE	1
 # define	FALSE	0
