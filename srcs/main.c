@@ -69,11 +69,17 @@ int				hostname_to_ip(char *hostname, char *ip)
     return (0);
 }
 
+void			set_signal(void)
+{
+	signal(SIGALRM, send_icmp);
+}
+
 int				main(int argc, char **argv)
 {
 	int		i;
 	BOOL	host_set;
 
+	set_signal();
 	host_set = FALSE;
 	i = 1;
 	if (argc >= 2)

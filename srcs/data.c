@@ -18,7 +18,7 @@ static t_data			*alloc_data(void)
 		return (NULL);
 	g_data->flags = NULL;
 	g_data->host = NULL;
-	g_data->sequence = 1;
+	g_data->sequence = 0;
 	return (g_data);
 }
 

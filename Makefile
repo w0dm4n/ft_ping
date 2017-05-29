@@ -18,7 +18,8 @@ LENGTHNAME	=	`printf "%s" $(NAMEBASE) | wc -c`
 MAX_COLS	=	$$(echo "$$(tput cols)-24-$(LENGTHNAME)"|bc)
 
 CC			=	gcc -ggdb
-FLAGS		=	-Wall -Wextra -Werror -O3
+#FLAGS		=	-Wall -Wextra -Werror -O3
+FLAGS		=	
 FLAGS_O		=	
 
 SRCDIR_PING		=	srcs/
