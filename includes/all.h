@@ -21,6 +21,7 @@
 # include	<netinet/ip.h>
 # include	<netinet/ip_icmp.h>
 # include	<unistd.h>
+# include	<sys/time.h>
 # define	BOOL	int
 # define	TRUE	1
 # define	FALSE	0
@@ -48,6 +49,7 @@ typedef struct		s_data
 	SOCKET					fd;
 	struct ip				*header;
 	struct icmp				*icmp_header;
+	struct sockaddr_in		sin;
 	int					sequence;
 }					t_data;
 
@@ -63,7 +65,7 @@ int					hostname_to_ip(char *hostname, char *ip);
 t_data				*get_data(void);
 void				set_host(char *host);
 void				parse_data(void);
-
+void				send_icmp(int sig);
 /*
 **	FLAGS
 */
