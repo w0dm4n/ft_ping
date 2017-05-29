@@ -30,10 +30,19 @@
 # define	FLAG_G			'G'
 # define	FLAG_g			'g'
 # define	FLAG_v			'v'
+# define	FLAG_s			's'
 # define	SOCKET 			int
 # define	IP4_HDRLEN		20			// IPv4 header length
 # define	ICMP_HDRLEN		8			// ICMP header length for echo request, excludes data
-# define	MAX_RAW_SIZE	1450
+# define	MAX_RAW_SIZE	1480
+
+#ifdef __unix__
+	#if BYTE_ORDER == BIG_ENDIAN
+		#define htons(n) (n)
+	#else
+		#define htons(n) (((((unsigned short)(n) & 0xFF)) << 8) | (((unsigned short)(n) & 0xFF00) >> 8))
+	#endif
+#endif
 
 typedef struct		s_flag
 {
@@ -57,6 +66,7 @@ typedef struct		s_data
 	int						sequence;
 	int						payload;
 	float					total_time;
+	float					times[4096];
 }					t_data;
 
 /*

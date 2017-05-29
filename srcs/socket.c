@@ -29,7 +29,6 @@ static void			set_address_header(void *packet, int packet_size)
 	data->header->ip_p = IPPROTO_ICMP; // ICMP Protocol
 	data->header->ip_v = 4; // IPv4
 	data->header->ip_hl = sizeof(struct ip) >> 2; // IPv4 header length (4 bits)
-	//data->header->ip_hl = 5;
 	data->header->ip_tos = 0;
 	data->header->ip_len = htons(packet_size);
 	data->header->ip_off = 0;
@@ -51,6 +50,68 @@ static void			set_icmp_header(void *packet)
 	data->icmp_header->icmp_cksum = 0; // set checksum to zero to calculate
 }
 
+void				add_to_times(float new_time)
+{
+	t_data		*data;
+	int			i;
+
+	i = 0;
+	data = get_data();
+	while (data->times[i])
+		i++;
+	data->times[i] = new_time;
+}
+
+float				get_min(void)
+{
+	float		min;
+	int			i;
+	t_data		*data;
+
+	data = get_data();
+	i = 0;
+	min = data->times[0];
+	while (data->times[i])
+	{
+		if (data->times[i] < min)
+			min = data->times[i];
+		i++;
+	}
+	return (min);
+}
+
+float				get_average(void)
+{
+	float		total;
+	int			i;
+	t_data		*data;
+
+	data = get_data();
+	i = 0;
+	total = 0.00;
+	while (data->times[i])
+		total += data->times[i++];
+	return (total / i);
+}
+
+float				get_max(void)
+{
+	float		max;
+	int			i;
+	t_data		*data;
+
+	data = get_data();
+	i = 0;
+	max = data->times[0];
+	while (data->times[i])
+	{
+		if (data->times[i] > max)
+			max = data->times[i];
+		i++;
+	}
+	return (max);
+}
+
 void				print_statistics(int sig)
 {
 	t_data		*data;
@@ -65,6 +126,7 @@ void				print_statistics(int sig)
 		data->total_time);
 	else
 		printf("%d packets transmitted, %d received, 100%c packet loss\n", data->sent, data->received, '%');
+	printf("round-trip min/avg/max = %.3f/%.3f/%.3f ms\n", get_min(), get_average(), get_max());
 	exit(0);
 }
 
@@ -101,22 +163,26 @@ void				receive_data(t_data *data, struct timeval before)
 			data->sequence, ip_header->ip_ttl, time_value);
 		data->total_time += time_value;
 		data->received++;
+		add_to_times(time_value);
 	}
 	data->sequence++;
 }
 
 void				check_flags(t_data *data)
 {
-	t_flag				**flags;
-	if ((flags[0] = get_flags(FLAG_H)) != NULL)
-	{
-		data->payload += ft_atoi(flags[0]->value);
-	}
+	t_flag				*h;
+	t_flag				*G;
+	int					G_value = 0;
+	if ((h = get_flags(FLAG_H)) != NULL)
+		data->payload += ft_atoi(h->value);
+	if (data->payload > (MAX_RAW_SIZE - sizeof(struct icmp*)))
+		data->payload = (MAX_RAW_SIZE - sizeof(struct icmp*));
 }
 
-void				send_icmp(int sig)
-{ 
-	int					packet_size = 0;
+void				send_with_address_header_icmp(void)
+{
+	int					packet_size = 0, G_value = 0;
+	t_flag				*G;
 	char				*packet;
 	t_data				*data;
 	struct timeval		before;
@@ -144,27 +210,100 @@ void				send_icmp(int sig)
 	gettimeofday (&before, NULL);
 	data->sent++;
 	receive_data(data, before);
+	if ((G = get_flags(FLAG_G)) != NULL)
+	{
+		G_value = ft_atoi(G->value);
+		if (data->payload > G_value)
+			print_statistics(0);
+	}
 	if (packet_size > MAX_RAW_SIZE)
 	{
 		print_statistics(0);
 		return ;
 	}
+}
+
+void				send_without_address_header_icmp(void)
+{
+	t_data					*data;
+	int						bytes_sent = 0;
+	void					*buffer = NULL;
+	int						packet_size = 0, G_value = 0;
+	struct timeval			before;
+	t_flag					*G;
+
+	data = get_data();
+	packet_size = sizeof (struct ip) + sizeof (struct icmp) + data->payload;
+	if (!(buffer = (char *)malloc(packet_size)))
+		return ;
+	ft_memset(buffer, 0, packet_size);
+	set_icmp_header(buffer);
+
+	ft_memset (&data->sin, 0, sizeof (struct sockaddr_in));
+	data->sin.sin_family = AF_INET;
+	inet_pton(AF_INET, data->host, &(data->sin.sin_addr));
+
+	struct sockaddr *addr = (struct sockaddr*) &data->sin;
+	data->icmp_header->icmp_cksum = checksum((unsigned short *)data->icmp_header, sizeof(struct icmp));
+	bytes_sent = sendto(data->fd, data->icmp_header, sizeof(data->icmp_header) + data->payload, MSG_DONTWAIT, addr, sizeof(*addr));
+	if (bytes_sent == -1)
+	{
+		printf("sendto() failed : Can't send raw data.\n");
+		exit(EXIT_FAILURE);
+	}
+	check_flags(data);
+	gettimeofday (&before, NULL);
+	data->sent++;
+	receive_data(data, before);
+	if ((G = get_flags(FLAG_G)) != NULL)
+	{
+		G_value = ft_atoi(G->value);
+		if (data->payload > G_value)
+			print_statistics(0);
+	}
+}
+
+void				send_icmp(int sig)
+{
+	if (get_flags(FLAG_H) != NULL || get_flags(FLAG_s))
+		send_without_address_header_icmp();
+	else
+		send_with_address_header_icmp();
 	alarm(1);
+}
+
+void				set_payload(t_data *data)
+{
+	t_flag	*s = get_flags(FLAG_s);
+	t_flag	*h = get_flags(FLAG_H);
+	t_flag	*g = get_flags(FLAG_g);
+
+	if (g)
+		data->payload = ft_atoi(g->value);
+	else if (h)
+		data->payload = 0;
+	else if (s)
+		data->payload = ft_atoi(s->value);
+	else
+		data->payload = 36;
 }
 
 void				start_icmp_connection(void)
 {
 	t_data				*data;
 	BOOL				opt;
+	t_flag				*h;
+	t_flag				*s;
 	opt = TRUE;
 	data = get_data();
 
+	check_flags(data);
 	if ((data->fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0) // Raw socket descriptor
 	{
 		printf("socket() failed : Operation not permitted\n");
 		exit(EXIT_FAILURE);
 	}
-	if (setsockopt(data->fd, IPPROTO_IP, IP_HDRINCL, &opt, sizeof(opt)) < 0) // set flag so socket expects us to provide IPv4 header.
+	if ((get_flags(FLAG_H) == NULL && get_flags(FLAG_s) == NULL) && (setsockopt(data->fd, IPPROTO_IP, IP_HDRINCL, &opt, sizeof(opt))) < 0) // set flag so socket expects us to provide IPv4 header.
 	{
 		printf("setsockopt() failed to set IP_HDRINCL\n");
 		exit (EXIT_FAILURE);
@@ -174,7 +313,21 @@ void				start_icmp_connection(void)
 		printf("setsockopt() failed to set SO_BROADCAST\n");
 		exit (EXIT_FAILURE);
 	}
-	printf("FT_PING %s (%s) 56 data bytes\n", data->default_host, data->host);
+	if (get_flags(FLAG_H) != NULL && get_flags(FLAG_s) != NULL)
+	{
+		printf("ft_ping: Packet size and ping sweep are mutually exclusive\n");
+		exit(0);
+	}
+	set_payload(data);
+	if ((h = get_flags(FLAG_H)) == NULL && (s = get_flags(FLAG_s)) == NULL)
+		printf("FT_PING %s (%s) 56 data bytes\n", data->default_host, data->host);
+	else
+	{
+		if (h)
+			printf("FT_PING %s (%s) %d data bytes\n", data->default_host, data->host, ft_atoi(h->value));
+		else if (s)
+			printf("FT_PING %s (%s) %d data bytes\n", data->default_host, data->host, ft_atoi(s->value));
+	}
 	send_icmp(0);
 	while (1);
 }

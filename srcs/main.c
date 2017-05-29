@@ -15,7 +15,7 @@
 void			print_usage(void)
 {
 	printf("usage: ft_ping [-v] [-g sweepminsize] [-G sweepmaxsize]");
-	printf(" [-h sweepincrsize] [host]\n");
+	printf(" [-h sweepincrsize] [host] [-s packet size]\n");
 }
 
 static char		*subchar(char *arg, int toSub)

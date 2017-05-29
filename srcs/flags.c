@@ -15,14 +15,14 @@
 BOOL							is_valid(char flag)
 {
 	if (flag == FLAG_H || flag == FLAG_g || flag == FLAG_G || \
-	flag == FLAG_v)
+	flag == FLAG_v || flag == FLAG_s)
 		return (TRUE);
 	return (FALSE);
 }
 
 BOOL							has_argument(char flag)
 {
-	if (flag == FLAG_H || flag == FLAG_g || flag == FLAG_G)
+	if (flag == FLAG_H || flag == FLAG_g || flag == FLAG_G || flag == FLAG_s)
 		return (TRUE);
 	return (FALSE);
 }
