@@ -23,16 +23,17 @@
 # include	<unistd.h>
 # include	<sys/time.h>
 # include	<signal.h>
-# define	BOOL	int
-# define	TRUE	1
-# define	FALSE	0
-# define	FLAG_H		'h'
-# define	FLAG_G		'G'
-# define	FLAG_g		'g'
-# define	FLAG_v		'v'
-# define	SOCKET 		int
-# define	IP4_HDRLEN	20			// IPv4 header length
-# define	ICMP_HDRLEN	8			// ICMP header length for echo request, excludes data
+# define	BOOL			int
+# define	TRUE			1
+# define	FALSE			0
+# define	FLAG_H			'h'
+# define	FLAG_G			'G'
+# define	FLAG_g			'g'
+# define	FLAG_v			'v'
+# define	SOCKET 			int
+# define	IP4_HDRLEN		20			// IPv4 header length
+# define	ICMP_HDRLEN		8			// ICMP header length for echo request, excludes data
+# define	MAX_RAW_SIZE	1450
 
 typedef struct		s_flag
 {
@@ -51,7 +52,11 @@ typedef struct		s_data
 	struct ip				*header;
 	struct icmp				*icmp_header;
 	struct sockaddr_in		sin;
-	int					sequence;
+	int						sent;
+	int						received;
+	int						sequence;
+	int						payload;
+	float					total_time;
 }					t_data;
 
 /*
@@ -67,6 +72,8 @@ t_data				*get_data(void);
 void				set_host(char *host);
 void				parse_data(void);
 void				send_icmp(int sig);
+void				print_statistics(int sig);
+
 /*
 **	FLAGS
 */
@@ -74,7 +81,7 @@ void				set_flags(t_flag *flags);
 void				add_flag(char *flag, char *value);
 BOOL				has_argument(char flag);
 BOOL				is_valid(char flag);
-#endif
+t_flag				*get_flags(char flag);
 
 /*
 **	ICMP
@@ -87,3 +94,4 @@ void				start_icmp_connection(void);
 unsigned short		checksum(unsigned short *ptr, int nbytes);
 uint8_t				*ft_allocate_ustrmem(int len);
 t_data				*g_data;
+#endif

@@ -51,6 +51,23 @@ static void			set_icmp_header(void *packet)
 	data->icmp_header->icmp_cksum = 0; // set checksum to zero to calculate
 }
 
+void				print_statistics(int sig)
+{
+	t_data		*data;
+	int			percent;
+
+	data = get_data();
+	percent = (data->received * 100) / data->sent;
+	percent = 100 - percent;
+	printf("\n--- %s ping statistics ---\n", data->default_host);
+	if (data->total_time > 0)
+		printf("%d packets transmitted, %d received, %d%c packet loss, time %.3fms\n", data->sent, data->received, percent, '%', \
+		data->total_time);
+	else
+		printf("%d packets transmitted, %d received, 100%c packet loss\n", data->sent, data->received, '%');
+	exit(0);
+}
+
 void				receive_data(t_data *data, struct timeval before)
 {
 	int					received;
@@ -70,28 +87,42 @@ void				receive_data(t_data *data, struct timeval before)
 	msg.msg_control = 0;
 	msg.msg_controllen = 0;
 	received = recvmsg(data->fd, &msg, 0);
-	ip_header = (struct ip*) iov.iov_base;
-	gettimeofday (&after, NULL);
-	ms_time = ((after.tv_sec - before.tv_sec) * 1000000 + after.tv_usec) - before.tv_usec;
-	float time_value = ms_time / 1000;
-	if (data->default_host != data->host)
-		printf("%d bytes from %s (%s): seq=%d ttl=%d time=%.3f ms\n", (received - 20), data->default_host, data->host, \
-		data->sequence, ip_header->ip_ttl, time_value);
-	else
-		printf("%d bytes from %s: seq=%d ttl=%d time=%.3f ms\n", (received - 20), data->host,\
-		data->sequence, ip_header->ip_ttl, time_value);
+	if (received > 0)
+	{
+		ip_header = (struct ip*) iov.iov_base;
+		gettimeofday (&after, NULL);
+		ms_time = ((after.tv_sec - before.tv_sec) * 1000000 + after.tv_usec) - before.tv_usec;
+		float time_value = ms_time / 1000;
+		if (data->default_host != data->host)
+			printf("%d bytes from %s (%s): seq=%d ttl=%d time=%.3f ms\n", (received - 20), data->default_host, data->host, \
+			data->sequence, ip_header->ip_ttl, time_value);
+		else
+			printf("%d bytes from %s: seq=%d ttl=%d time=%.3f ms\n", (received - 20), data->host,\
+			data->sequence, ip_header->ip_ttl, time_value);
+		data->total_time += time_value;
+		data->received++;
+	}
 	data->sequence++;
 }
 
-void				send_icmp(int sig)
+void				check_flags(t_data *data)
 {
-	int					payload_size = 36;
-	int					packet_size = sizeof (struct ip) + sizeof (struct icmp) + payload_size;
+	t_flag				**flags;
+	if ((flags[0] = get_flags(FLAG_H)) != NULL)
+	{
+		data->payload += ft_atoi(flags[0]->value);
+	}
+}
+
+void				send_icmp(int sig)
+{ 
+	int					packet_size = 0;
 	char				*packet;
 	t_data				*data;
 	struct timeval		before;
 
 	data = get_data();
+	packet_size = sizeof (struct ip) + sizeof (struct icmp) + data->payload;
 	if (!(packet = (char *)malloc(packet_size)))
 		return ;
 	ft_memset(packet, 0, packet_size);
@@ -102,15 +133,22 @@ void				send_icmp(int sig)
 	data->sin.sin_family = AF_INET;
 	data->sin.sin_addr.s_addr = data->header->ip_dst.s_addr;
 
-	ft_memset(packet + sizeof(struct ip) + sizeof(struct icmp), 0, payload_size);
-	data->icmp_header->icmp_cksum = checksum((unsigned short *)data->icmp_header, sizeof(struct icmp) + payload_size);
-	gettimeofday (&before, NULL);
+	ft_memset(packet + sizeof(struct ip) + sizeof(struct icmp), 0, data->payload);
+	data->icmp_header->icmp_cksum = checksum((unsigned short *)data->icmp_header, sizeof(struct icmp) + data->payload);
 	if (sendto(data->fd, packet, packet_size, 0, (struct sockaddr *)&data->sin, sizeof(struct sockaddr)) < 0) // Send packet
 	{
 		printf("sendto() failed : Can't send raw data\n");
 		exit(EXIT_FAILURE);
 	}
+	check_flags(data);
+	gettimeofday (&before, NULL);
+	data->sent++;
 	receive_data(data, before);
+	if (packet_size > MAX_RAW_SIZE)
+	{
+		print_statistics(0);
+		return ;
+	}
 	alarm(1);
 }
 

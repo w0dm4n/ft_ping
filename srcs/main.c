@@ -72,6 +72,7 @@ int				hostname_to_ip(char *hostname, char *ip)
 void			set_signal(void)
 {
 	signal(SIGALRM, send_icmp);
+	signal(SIGINT, print_statistics);
 }
 
 int				main(int argc, char **argv)

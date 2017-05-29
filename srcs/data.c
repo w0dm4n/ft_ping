@@ -19,6 +19,7 @@ static t_data			*alloc_data(void)
 	g_data->flags = NULL;
 	g_data->host = NULL;
 	g_data->sequence = 0;
+	g_data->payload = 36;
 	return (g_data);
 }
 

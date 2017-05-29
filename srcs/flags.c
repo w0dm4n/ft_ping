@@ -27,6 +27,20 @@ BOOL							has_argument(char flag)
 	return (FALSE);
 }
 
+t_flag							*get_flags(char flag)
+{
+	t_flag		*flags;
+
+	flags = get_data()->flags;
+	while (flags)
+	{
+		if (flags->flag == flag)
+			return flags;
+		flags = flags->next;
+	}
+	return (NULL);
+}
+
 static	t_flag					*alloc_flag(char flag, char *value)
 {
 	t_flag			*new_flag;
