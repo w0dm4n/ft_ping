@@ -155,12 +155,17 @@ void				receive_data(t_data *data, struct timeval before)
 		gettimeofday (&after, NULL);
 		ms_time = ((after.tv_sec - before.tv_sec) * 1000000 + after.tv_usec) - before.tv_usec;
 		float time_value = ms_time / 1000;
-		if (data->default_host != data->host)
-			printf("%d bytes from %s (%s): seq=%d ttl=%d time=%.3f ms\n", (received - 20), data->default_host, data->host, \
-			data->sequence, ip_header->ip_ttl, time_value);
+		if (get_flags(FLAG_v) != NULL && received < data->last_sent)
+			printf("packet too short (%d bytes) from %s\n", received, data->host);
 		else
-			printf("%d bytes from %s: seq=%d ttl=%d time=%.3f ms\n", (received - 20), data->host,\
-			data->sequence, ip_header->ip_ttl, time_value);
+		{
+			if (data->default_host != data->host)
+				printf("%d bytes from %s (%s): seq=%d ttl=%d time=%.3f ms\n", (received - 20), data->default_host, data->host, \
+				data->sequence, ip_header->ip_ttl, time_value);
+			else
+				printf("%d bytes from %s: seq=%d ttl=%d time=%.3f ms\n", (received - 20), data->host,\
+				data->sequence, ip_header->ip_ttl, time_value);
+		}
 		data->total_time += time_value;
 		data->received++;
 		add_to_times(time_value);
@@ -201,7 +206,7 @@ void				send_with_address_header_icmp(void)
 
 	ft_memset(packet + sizeof(struct ip) + sizeof(struct icmp), 0, data->payload);
 	data->icmp_header->icmp_cksum = checksum((unsigned short *)data->icmp_header, sizeof(struct icmp) + data->payload);
-	if (sendto(data->fd, packet, packet_size, 0, (struct sockaddr *)&data->sin, sizeof(struct sockaddr)) < 0) // Send packet
+	if ((data->last_sent = sendto(data->fd, packet, packet_size, 0, (struct sockaddr *)&data->sin, sizeof(struct sockaddr))) < 0) // Send packet
 	{
 		printf("sendto() failed : Can't send raw data\n");
 		exit(EXIT_FAILURE);
@@ -226,7 +231,6 @@ void				send_with_address_header_icmp(void)
 void				send_without_address_header_icmp(void)
 {
 	t_data					*data;
-	int						bytes_sent = 0;
 	void					*buffer = NULL;
 	int						packet_size = 0, G_value = 0;
 	struct timeval			before;
@@ -245,8 +249,8 @@ void				send_without_address_header_icmp(void)
 
 	struct sockaddr *addr = (struct sockaddr*) &data->sin;
 	data->icmp_header->icmp_cksum = checksum((unsigned short *)data->icmp_header, sizeof(struct icmp));
-	bytes_sent = sendto(data->fd, data->icmp_header, sizeof(data->icmp_header) + data->payload, MSG_DONTWAIT, addr, sizeof(*addr));
-	if (bytes_sent == -1)
+	data->last_sent = sendto(data->fd, data->icmp_header, sizeof(data->icmp_header) + data->payload, MSG_DONTWAIT, addr, sizeof(*addr));
+	if (data->last_sent == -1)
 	{
 		printf("sendto() failed : Can't send raw data.\n");
 		exit(EXIT_FAILURE);

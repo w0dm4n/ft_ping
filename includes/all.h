@@ -67,6 +67,7 @@ typedef struct		s_data
 	int						payload;
 	float					total_time;
 	float					times[4096];
+	int						last_sent;
 }					t_data;
 
 /*

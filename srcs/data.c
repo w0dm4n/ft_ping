@@ -20,6 +20,7 @@ static t_data			*alloc_data(void)
 	g_data->host = NULL;
 	g_data->sequence = 0;
 	g_data->payload = 0;
+	g_data->last_sent = 0;
 	return (g_data);
 }
 
