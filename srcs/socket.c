@@ -269,10 +269,14 @@ void				send_without_address_header_icmp(void)
 
 void				send_icmp(int sig)
 {
+	#ifdef __linux__
 	if (get_flags(FLAG_H) != NULL || get_flags(FLAG_s))
+			send_without_address_header_icmp();
+		else
+			send_with_address_header_icmp();
+	#else
 		send_without_address_header_icmp();
-	else
-		send_with_address_header_icmp();
+	#endif
 	alarm(1);
 }
 
@@ -289,7 +293,13 @@ void				set_payload(t_data *data)
 	else if (s)
 		data->payload = ft_atoi(s->value);
 	else
-		data->payload = 36;
+	{
+		#ifdef __linux__
+			data->payload = 36;
+		#else
+			data->payload = 56;
+		#endif
+	}
 }
 
 void				start_icmp_connection(void)
@@ -302,16 +312,25 @@ void				start_icmp_connection(void)
 	data = get_data();
 
 	check_flags(data);
-	if ((data->fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0) // Raw socket descriptor
-	{
-		printf("socket() failed : Operation not permitted\n");
-		exit(EXIT_FAILURE);
-	}
-	if ((get_flags(FLAG_H) == NULL && get_flags(FLAG_s) == NULL) && (setsockopt(data->fd, IPPROTO_IP, IP_HDRINCL, &opt, sizeof(opt))) < 0) // set flag so socket expects us to provide IPv4 header.
-	{
-		printf("setsockopt() failed to set IP_HDRINCL\n");
-		exit (EXIT_FAILURE);
-	}
+	#ifdef __linux__ // LINUX
+		if ((data->fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0) // Raw socket descriptor
+		{
+			printf("socket() failed : Operation not permitted\n");
+			exit(EXIT_FAILURE);
+		}
+		if ((get_flags(FLAG_H) == NULL && get_flags(FLAG_s) == NULL) && (setsockopt(data->fd, IPPROTO_IP, IP_HDRINCL, &opt, sizeof(opt))) < 0) // set flag so socket expects us to provide IPv4 header.
+		{
+			printf("setsockopt() failed to set IP_HDRINCL\n");
+			exit (EXIT_FAILURE);
+		}
+	#else // OSX
+		if ((data->fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP)) < 0) // Raw socket descriptor
+		{
+			printf("socket() failed : Operation not permitted\n");
+			exit(EXIT_FAILURE);
+		}
+	#endif
+
 	if (setsockopt(data->fd, SOL_SOCKET, SO_BROADCAST, (const char*)&opt, sizeof(opt)) < 0) // allow socket to send datagrams to broadcast addresses
     {
 		printf("setsockopt() failed to set SO_BROADCAST\n");
