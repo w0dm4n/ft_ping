@@ -90,7 +90,7 @@ float				get_average(void)
 	total = 0.00;
 	while (data->times[i])
 		total += data->times[i++];
-	return ((total / i) ? (total / i) : 0.00);
+	return (((total / i > 0.00) ? (total / i) : 0.00));
 }
 
 float				get_max(void)
@@ -158,7 +158,7 @@ void				receive_data(t_data *data, struct timeval before)
 		ms_time = ((after.tv_sec - before.tv_sec) * 1000000 + after.tv_usec) - before.tv_usec;
 		float time_value = ms_time / 1000;
 		if (get_flags(FLAG_v) != NULL && received < data->last_sent)
-			printf("packet too short (%d bytes) from %s\n", received, data->host);
+			printf("wrong total length (%d bytes) from %s\n", received, data->host);
 		else
 		{
 			if (data->default_host != data->host)
