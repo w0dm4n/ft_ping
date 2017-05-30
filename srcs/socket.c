@@ -39,7 +39,6 @@ static void			set_address_header(void *packet, int packet_size)
 static void			set_icmp_header(void *packet)
 {
 	t_data			*data;
-	int				sequence;
 
 	data = get_data();
 	data->icmp_header = (struct icmp *) (packet + sizeof (struct ip));
@@ -118,15 +117,18 @@ void				print_statistics(int sig)
 	int			percent;
 
 	data = get_data();
-	percent = (data->received * 100) / data->sent;
-	percent = 100 - percent;
-	printf("\n--- %s ping statistics ---\n", data->default_host);
-	if (data->total_time > 0)
-		printf("%d packets transmitted, %d received, %d%c packet loss, time %.3fms\n", data->sent, data->received, percent, '%', \
-		data->total_time);
-	else
-		printf("%d packets transmitted, %d received, 100%c packet loss\n", data->sent, data->received, '%');
-	printf("round-trip min/avg/max = %.3f/%.3f/%.3f ms\n", get_min(), get_average(), get_max());
+	if (sig == SIGINT)
+	{
+		percent = (data->received * 100) / data->sent;
+		percent = 100 - percent;
+		printf("\n--- %s ping statistics ---\n", data->default_host);
+		if (data->total_time > 0)
+			printf("%d packets transmitted, %d received, %d%c packet loss, time %.3fms\n", data->sent, data->received, percent, '%', \
+			data->total_time);
+		else
+			printf("%d packets transmitted, %d received, 100%c packet loss\n", data->sent, data->received, '%');
+		printf("round-trip min/avg/max = %.3f/%.3f/%.3f ms\n", get_min(), get_average(), get_max());
+	}
 	exit(0);
 }
 
@@ -176,11 +178,9 @@ void				receive_data(t_data *data, struct timeval before)
 void				check_flags(t_data *data)
 {
 	t_flag				*h;
-	t_flag				*G;
-	int					G_value = 0;
 	if ((h = get_flags(FLAG_H)) != NULL)
 		data->payload += ft_atoi(h->value);
-	if (data->payload > (MAX_RAW_SIZE - sizeof(struct icmp*)))
+	if (data->payload > (int) (MAX_RAW_SIZE - sizeof(struct icmp*)))
 		data->payload = (MAX_RAW_SIZE - sizeof(struct icmp*));
 }
 
@@ -219,11 +219,11 @@ void				send_with_address_header_icmp(void)
 	{
 		G_value = ft_atoi(G->value);
 		if (data->payload > G_value)
-			print_statistics(0);
+			print_statistics(SIGINT);
 	}
 	if (packet_size > MAX_RAW_SIZE)
 	{
-		print_statistics(0);
+		print_statistics(SIGINT);
 		return ;
 	}
 }
@@ -263,21 +263,24 @@ void				send_without_address_header_icmp(void)
 	{
 		G_value = ft_atoi(G->value);
 		if (data->payload > G_value)
-			print_statistics(0);
+			print_statistics(SIGINT);
 	}
 }
 
 void				send_icmp(int sig)
 {
-	#ifdef __linux__
-	if (get_flags(FLAG_H) != NULL || get_flags(FLAG_s))
+	if (sig == SIGALRM)
+	{
+		#ifdef __linux__
+		if (get_flags(FLAG_H) != NULL || get_flags(FLAG_s))
+				send_without_address_header_icmp();
+			else
+				send_with_address_header_icmp();
+		#else
 			send_without_address_header_icmp();
-		else
-			send_with_address_header_icmp();
-	#else
-		send_without_address_header_icmp();
-	#endif
-	alarm(1);
+		#endif
+		alarm(1);
+	}
 }
 
 void				set_payload(t_data *data)
@@ -351,6 +354,6 @@ void				start_icmp_connection(void)
 		else if (s)
 			printf("FT_PING %s (%s) %d data bytes\n", data->default_host, data->host, ft_atoi(s->value));
 	}
-	send_icmp(0);
+	send_icmp(SIGALRM);
 	while (1);
 }
