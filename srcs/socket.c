@@ -90,7 +90,7 @@ float				get_average(void)
 	total = 0.00;
 	while (data->times[i])
 		total += data->times[i++];
-	return (total / i);
+	return ((total / i) ? (total / i) : 0.00);
 }
 
 float				get_max(void)
@@ -172,6 +172,8 @@ void				receive_data(t_data *data, struct timeval before)
 		data->received++;
 		add_to_times(time_value);
 	}
+	else
+		printf("Request timeout for icmp_seq %d\n", data->sequence);
 	data->sequence++;
 }
 
@@ -344,6 +346,10 @@ void				start_icmp_connection(void)
 		printf("ft_ping: Packet size and ping sweep are mutually exclusive\n");
 		exit(0);
 	}
+	struct timeval timeout;
+	timeout.tv_sec = 1;
+	timeout.tv_usec = 0;
+	setsockopt (data->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
 	set_payload(data);
 	if ((h = get_flags(FLAG_H)) == NULL && (s = get_flags(FLAG_s)) == NULL)
 		printf("FT_PING %s (%s) 56 data bytes\n", data->default_host, data->host);

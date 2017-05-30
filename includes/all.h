@@ -44,6 +44,13 @@
 	#endif
 #endif
 
+#ifndef SOL_TCP
+    #define SOL_TCP 6  // socket options TCP level
+#endif
+#ifndef TCP_USER_TIMEOUT
+    #define TCP_USER_TIMEOUT 18  // how long for loss retry before timeout [ms]
+#endif
+
 typedef struct		s_flag
 {
 	char			flag;
