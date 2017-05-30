@@ -18,8 +18,7 @@ LENGTHNAME	=	`printf "%s" $(NAMEBASE) | wc -c`
 MAX_COLS	=	$$(echo "$$(tput cols)-24-$(LENGTHNAME)"|bc)
 
 CC			=	gcc -ggdb
-#FLAGS		=	-Wall -Wextra -Werror -O3
-FLAGS		=	
+FLAGS		=	-Wall -Wextra -Werror
 FLAGS_O		=	
 
 SRCDIR_PING		=	srcs/
@@ -49,6 +48,7 @@ $(NAME):
 	if test -f $(NAME_PING) ; then												\
 		echo "make: Nothing to be done for \`all\`.";				        		\
 	else																			\
+		make re -C libft/ &&														\
 		make ping && 																\
 		echo "\r\033[38;5;184m👥  AUTHOR(s): \033[0m\033[K" && 						\
 		echo "\r\033[38;5;15m`cat auteur | sed s/^/\ \ \ \ -/g`\033[0m\033[K" &&	\
